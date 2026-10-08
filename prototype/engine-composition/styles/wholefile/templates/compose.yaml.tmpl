@@ -1,0 +1,10 @@
+{{- if .Is "database" "postgres" -}}
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: app
+    ports:
+      - "5432:5432"
+{{- end}}

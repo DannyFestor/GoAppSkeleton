@@ -1,0 +1,6 @@
+{{- if .Is "sessions" "database" -}}
+CREATE TABLE IF NOT EXISTS sessions (
+    token TEXT PRIMARY KEY,
+    data {{if .Is "database" "postgres"}}BYTEA{{else}}BLOB{{end}} NOT NULL
+);
+{{- end}}

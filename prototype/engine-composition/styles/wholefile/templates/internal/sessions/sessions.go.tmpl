@@ -1,0 +1,50 @@
+{{- if .Uses "sessions" -}}
+package sessions
+
+import (
+	"context"
+	"net/http"
+)
+
+type Session map[string]string
+
+type Store interface {
+	Load(r *http.Request) (Session, error)
+	Save(w http.ResponseWriter, r *http.Request, session Session) error
+	Destroy(w http.ResponseWriter, r *http.Request) error
+}
+
+type Manager struct {
+	store Store
+}
+
+func NewManager(store Store) *Manager {
+	return &Manager{store: store}
+}
+
+type contextKey struct{}
+
+func (m *Manager) Middleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		session, err := m.store.Load(r)
+		// An unreadable or tampered session is replaced rather than failing the request.
+		if err != nil || session == nil {
+			session = Session{}
+		}
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), contextKey{}, session)))
+	})
+}
+
+func (m *Manager) Save(w http.ResponseWriter, r *http.Request, session Session) error {
+	return m.store.Save(w, r, session)
+}
+
+func (m *Manager) Destroy(w http.ResponseWriter, r *http.Request) error {
+	return m.store.Destroy(w, r)
+}
+
+func FromContext(ctx context.Context) Session {
+	session, _ := ctx.Value(contextKey{}).(Session)
+	return session
+}
+{{- end}}

@@ -1,0 +1,33 @@
+{{- if .Uses "database" -}}
+package database
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+{{if .Is "database" "postgres"}}
+	_ "github.com/jackc/pgx/v5/stdlib"
+{{- end}}
+{{- if .Is "database" "sqlite"}}
+	_ "modernc.org/sqlite"
+{{- end}}
+)
+
+{{if .Is "database" "postgres" -}}
+const driverName = "pgx"
+{{- else -}}
+const driverName = "sqlite"
+{{- end}}
+
+func Open(ctx context.Context, dsn string) (*sql.DB, error) {
+	db, err := sql.Open(driverName, dsn)
+	if err != nil {
+		return nil, fmt.Errorf("opening database: %w", err)
+	}
+	if err := db.PingContext(ctx); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("pinging database: %w", err)
+	}
+	return db, nil
+}
+{{- end}}

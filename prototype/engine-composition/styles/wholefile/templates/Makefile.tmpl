@@ -1,0 +1,26 @@
+-include .env
+export
+
+.PHONY: run
+run: ## Run the web server
+	go run ./cmd/web
+
+.PHONY: test
+test: ## Run the tests
+	go test ./...
+{{- if .Uses "database"}}
+
+.PHONY: migrate
+migrate: ## Apply every migration in name order
+{{- if .Is "database" "postgres"}}
+	for f in migrations/*.sql; do psql "$$DATABASE_URL" -f "$$f"; done
+{{- else}}
+	for f in migrations/*.sql; do sqlite3 "$$DATABASE_URL" < "$$f"; done
+{{- end}}
+{{- end}}
+{{- if .Is "database" "postgres"}}
+
+.PHONY: services
+services: ## Start the backing services
+	docker compose up -d --wait postgres
+{{- end}}

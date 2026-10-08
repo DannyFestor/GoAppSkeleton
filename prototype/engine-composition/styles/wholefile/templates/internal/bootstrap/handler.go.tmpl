@@ -1,0 +1,114 @@
+package bootstrap
+
+import (
+{{- if .Uses "database"}}
+	"database/sql"
+{{- end}}
+	"fmt"
+	"log/slog"
+	"net/http"
+{{- if .Uses "sessions"}}
+	"strconv"
+{{- end}}
+{{- if .Is "router" "chi"}}
+
+	"github.com/go-chi/chi/v5"
+{{- end}}
+{{- if .Uses "sessions"}}
+
+	"{{.Module}}/internal/sessions"
+{{- end}}
+)
+
+type Dependencies struct {
+	Logger *slog.Logger
+{{- if .Uses "database"}}
+	DB *sql.DB
+{{- end}}
+{{- if .Is "sessions" "cookie"}}
+	SessionKey []byte
+{{- end}}
+}
+
+// NewHandler is the composition root: every route and middleware is wired here, and nowhere else.
+func NewHandler(deps Dependencies) http.Handler {
+{{- if .Is "router" "chi"}}
+	router := chi.NewRouter()
+{{- else}}
+	router := http.NewServeMux()
+{{- end}}
+{{- if .Is "sessions" "cookie"}}
+	manager := sessions.NewManager(sessions.NewCookieStore(deps.SessionKey))
+{{- end}}
+{{- if .Is "sessions" "database"}}
+	manager := sessions.NewManager(sessions.NewSQLStore(deps.DB))
+{{- end}}
+
+{{if .Is "router" "chi"}}
+	router.Get("/healthz", health(deps))
+{{- if .Uses "sessions"}}
+	router.Get("/", home(deps, manager))
+	router.Post("/logout", logout(deps, manager))
+{{- else}}
+	router.Get("/", home())
+{{- end}}
+{{- else}}
+	router.HandleFunc("GET /healthz", health(deps))
+{{- if .Uses "sessions"}}
+	router.HandleFunc("GET /{$}", home(deps, manager))
+	router.HandleFunc("POST /logout", logout(deps, manager))
+{{- else}}
+	router.HandleFunc("GET /{$}", home())
+{{- end}}
+{{- end}}
+
+{{if .Uses "sessions" -}}
+	return manager.Middleware(router)
+{{- else -}}
+	return router
+{{- end}}
+}
+
+func health(deps Dependencies) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+{{- if .Uses "database"}}
+		if err := deps.DB.PingContext(r.Context()); err != nil {
+			deps.Logger.Error("health check", "error", err)
+			http.Error(w, "database unavailable", http.StatusServiceUnavailable)
+			return
+		}
+{{- end}}
+		fmt.Fprintln(w, "ok")
+	}
+}
+{{if .Uses "sessions"}}
+func home(deps Dependencies, manager *sessions.Manager) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		session := sessions.FromContext(r.Context())
+		visits, _ := strconv.Atoi(session["visits"])
+		session["visits"] = strconv.Itoa(visits + 1)
+
+		if err := manager.Save(w, r, session); err != nil {
+			deps.Logger.Error("saving session", "error", err)
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+		fmt.Fprintf(w, "Hello, visit %d\n", visits+1)
+	}
+}
+
+func logout(deps Dependencies, manager *sessions.Manager) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := manager.Destroy(w, r); err != nil {
+			deps.Logger.Error("destroying session", "error", err)
+		}
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
+}
+{{- else}}
+func home() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "Hello")
+	}
+}
+{{- end}}
