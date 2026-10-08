@@ -8,9 +8,6 @@ import (
 
 const errorPage = "error.html"
 
-// HandlerFunc is the handler shape every feature slice uses: return an error instead of writing one.
-type HandlerFunc func(http.ResponseWriter, *http.Request) error
-
 type pageRenderer interface {
 	Render(w http.ResponseWriter, status int, page string, data any) error
 }
@@ -32,15 +29,6 @@ func NewResponder(renderer pageRenderer, logger *slog.Logger) *Responder {
 
 func (rs *Responder) Render(w http.ResponseWriter, status int, page string, data any) error {
 	return rs.renderer.Render(w, status, page, data)
-}
-
-// Handle adapts an error-returning HandlerFunc to http.Handler.
-func (rs *Responder) Handle(fn HandlerFunc) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if err := fn(w, r); err != nil {
-			rs.Error(w, r, err)
-		}
-	})
 }
 
 func (rs *Responder) Error(w http.ResponseWriter, r *http.Request, err error) {

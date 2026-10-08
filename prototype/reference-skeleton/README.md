@@ -11,11 +11,12 @@ make test     # unit, feature, e2e
 
 | Concern | Prototype choice |
 |---|---|
-| Layout | `cmd/web` (process entry only), `internal/bootstrap` (composition root, importable by feature tests), `internal/<slice>` per feature, `internal/httpx` for feature-agnostic HTTP plumbing, `internal/config`, `ui/` for embedded templates and static files. |
+| Layout | Tests in `tests/` (Laravel convention). `cmd/web` (process entry only), `internal/bootstrap` (composition root, importable by feature tests), `internal/<slice>` per feature, `internal/httpx` for feature-agnostic HTTP plumbing, `internal/config`, `ui/` for embedded templates and static files. |
 | Wiring | Dependency injection everywhere through exported constructors. `main` builds the process environment; `run(ctx, env) int` is testable; `bootstrap.NewHandler` is the only place slices are constructed and mounted. No globals, no DI container. |
 | Interfaces | Declared by the consumer, next to the code that uses them (`home.responder`, `httpx.pageRenderer`, `httpx.errorResponder`), never by the provider. Duplicating a small interface across consumers is fine; a provider-owned interface invites import cycles. |
 | Slice shape | `type Handler struct{deps}`, `New(deps) *Handler`, `Register(mux)`. The slice owns its route patterns. |
-| Handler shape | `func(w, r) error`, adapted by `Responder.Handle`. `httpx.StatusError` is shown to the client; any other error is logged and becomes a generic 500. |
+| Handler shape | Plain `http.HandlerFunc`, as close to the stdlib as possible. A failing handler calls `responder.Error(w, r, err)`: `httpx.StatusError` is shown to the client; any other error is logged and becomes a generic 500. |
+| Middleware | `httpx.Middleware` is `func(http.Handler) http.Handler`; `httpx.Chain(handler, a, b)` applies them with the first listed outermost, replacing nested `a(b(handler))`. |
 | Rendering | `html/template`, every page parsed at boot (broken template fails startup), rendered into a buffer before writing. |
 | Config | Environment variables only (`ADDR`, `LOG_LEVEL`), parsed into a typed `Config` with all errors joined. No `.env` loader. |
 | Logging | `log/slog` text handler on stdout, level from config, injected (no `slog.SetDefault`). `http.Server.ErrorLog` routed through it. |

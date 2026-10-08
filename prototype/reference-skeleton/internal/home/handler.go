@@ -1,16 +1,12 @@
 package home
 
-import (
-	"net/http"
-
-	"example.com/myapp/internal/httpx"
-)
+import "net/http"
 
 const page = "home.html"
 
 type responder interface {
-	Handle(fn httpx.HandlerFunc) http.Handler
 	Render(w http.ResponseWriter, status int, page string, data any) error
+	Error(w http.ResponseWriter, r *http.Request, err error)
 }
 
 type pageData struct {
@@ -26,9 +22,11 @@ func New(responder responder) *Handler {
 }
 
 func (h *Handler) Register(mux *http.ServeMux) {
-	mux.Handle("GET /{$}", h.responder.Handle(h.show))
+	mux.HandleFunc("GET /{$}", h.show)
 }
 
-func (h *Handler) show(w http.ResponseWriter, _ *http.Request) error {
-	return h.responder.Render(w, http.StatusOK, page, pageData{Title: "Home"})
+func (h *Handler) show(w http.ResponseWriter, r *http.Request) {
+	if err := h.responder.Render(w, http.StatusOK, page, pageData{Title: "Home"}); err != nil {
+		h.responder.Error(w, r, err)
+	}
 }

@@ -24,5 +24,5 @@ func NewHandler(logger *slog.Logger) (http.Handler, error) {
 	health.New().Register(mux)
 	home.New(responder).Register(mux)
 
-	return httpx.Recover(responder, mux), nil
+	return httpx.Chain(mux, httpx.Recover(responder)), nil
 }

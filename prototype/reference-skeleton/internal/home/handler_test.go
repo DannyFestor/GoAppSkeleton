@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"example.com/myapp/internal/home"
-	"example.com/myapp/internal/httpx"
 )
 
 type fakeResponder struct {
@@ -14,9 +13,7 @@ type fakeResponder struct {
 	renderedStatus int
 }
 
-func (f *fakeResponder) Handle(fn httpx.HandlerFunc) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { _ = fn(w, r) })
-}
+func (f *fakeResponder) Error(http.ResponseWriter, *http.Request, error) {}
 
 func (f *fakeResponder) Render(_ http.ResponseWriter, status int, page string, _ any) error {
 	f.renderedStatus, f.renderedPage = status, page

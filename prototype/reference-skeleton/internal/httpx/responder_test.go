@@ -18,7 +18,7 @@ var testTemplates = fstest.MapFS{
 	"pages/error.html":  {Data: []byte(`{{define "main"}}{{.Status}} {{.Message}}{{end}}`)},
 }
 
-func TestResponderHandle(t *testing.T) {
+func TestResponderError(t *testing.T) {
 	tests := []struct {
 		name       string
 		handlerErr error
@@ -42,10 +42,8 @@ func TestResponderHandle(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			responder := newTestResponder(t)
-			handler := responder.Handle(func(http.ResponseWriter, *http.Request) error { return tt.handlerErr })
-
 			rec := httptest.NewRecorder()
-			handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+			responder.Error(rec, httptest.NewRequest(http.MethodGet, "/", nil), tt.handlerErr)
 
 			if rec.Code != tt.wantStatus {
 				t.Errorf("status = %d, want %d", rec.Code, tt.wantStatus)

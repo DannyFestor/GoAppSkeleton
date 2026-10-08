@@ -22,7 +22,7 @@ func TestRecoverReportsPanic(t *testing.T) {
 	panicking := http.HandlerFunc(func(http.ResponseWriter, *http.Request) { panic("boom") })
 
 	rec := httptest.NewRecorder()
-	httpx.Recover(responder, panicking).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+	httpx.Recover(responder)(panicking).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
 
 	if responder.reported == nil {
 		t.Fatal("panic was not reported")
