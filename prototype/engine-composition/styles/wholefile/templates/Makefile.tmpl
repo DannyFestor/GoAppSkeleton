@@ -18,9 +18,11 @@ migrate: ## Apply every migration in name order
 	for f in migrations/*.sql; do sqlite3 "$$DATABASE_URL" < "$$f"; done
 {{- end}}
 {{- end}}
-{{- if .Is "database" "postgres"}}
+{{- if or (.Is "database" "postgres") (.Is "cache" "redis")}}
 
 .PHONY: services
 services: ## Start the backing services
-	docker compose up -d --wait postgres
+	docker compose up -d --wait
+{{- if .Is "database" "postgres"}} postgres{{end}}
+{{- if .Is "cache" "redis"}} redis{{end}}
 {{- end}}

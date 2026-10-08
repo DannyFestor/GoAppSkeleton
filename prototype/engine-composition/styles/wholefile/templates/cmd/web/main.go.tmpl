@@ -13,6 +13,9 @@ import (
 {{- if .Uses "database"}}
 	"{{.Module}}/internal/database"
 {{- end}}
+{{- if .Uses "cache"}}
+	"{{.Module}}/internal/cache"
+{{- end}}
 )
 
 func main() {
@@ -35,6 +38,13 @@ func run(ctx context.Context, logger *slog.Logger) error {
 	}
 	defer db.Close()
 {{end}}
+{{- if .Is "cache" "redis"}}
+	cacheClient, err := cache.Open(ctx, os.Getenv("REDIS_URL"))
+	if err != nil {
+		return err
+	}
+	defer cacheClient.Close()
+{{end}}
 	deps := bootstrap.Dependencies{
 		Logger: logger,
 {{- if .Uses "database"}}
@@ -42,6 +52,9 @@ func run(ctx context.Context, logger *slog.Logger) error {
 {{- end}}
 {{- if .Is "sessions" "cookie"}}
 		SessionKey: []byte(os.Getenv("SESSION_KEY")),
+{{- end}}
+{{- if .Uses "cache"}}
+		Cache: cacheClient,
 {{- end}}
 	}
 

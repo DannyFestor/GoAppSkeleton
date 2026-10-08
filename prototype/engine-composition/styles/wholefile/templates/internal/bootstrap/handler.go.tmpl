@@ -14,6 +14,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 {{- end}}
+{{- if .Is "cache" "redis"}}
+	redis "github.com/redis/go-redis/v9"
+{{- end}}
 {{- if .Uses "sessions"}}
 
 	"{{.Module}}/internal/sessions"
@@ -27,6 +30,9 @@ type Dependencies struct {
 {{- end}}
 {{- if .Is "sessions" "cookie"}}
 	SessionKey []byte
+{{- end}}
+{{- if .Is "cache" "redis"}}
+	Cache *redis.Client
 {{- end}}
 }
 
@@ -75,6 +81,13 @@ func health(deps Dependencies) http.HandlerFunc {
 		if err := deps.DB.PingContext(r.Context()); err != nil {
 			deps.Logger.Error("health check", "error", err)
 			http.Error(w, "database unavailable", http.StatusServiceUnavailable)
+			return
+		}
+{{- end}}
+{{- if .Is "cache" "redis"}}
+		if err := deps.Cache.Ping(r.Context()).Err(); err != nil {
+			deps.Logger.Error("health check", "error", err)
+			http.Error(w, "cache unavailable", http.StatusServiceUnavailable)
 			return
 		}
 {{- end}}
