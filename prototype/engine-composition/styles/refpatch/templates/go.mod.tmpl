@@ -1,0 +1,17 @@
+module {{.Module}}
+
+go 1.27
+{{- if or (.Is "router" "chi") (.Uses "database")}}
+
+require (
+{{- if .Is "router" "chi"}}
+	github.com/go-chi/chi/v5 v5.3.2
+{{- end}}
+{{- if .Is "database" "postgres"}}
+	github.com/jackc/pgx/v5 v5.11.0
+{{- end}}
+{{- if .Is "database" "sqlite"}}
+	modernc.org/sqlite v1.60.1
+{{- end}}
+)
+{{- end}}

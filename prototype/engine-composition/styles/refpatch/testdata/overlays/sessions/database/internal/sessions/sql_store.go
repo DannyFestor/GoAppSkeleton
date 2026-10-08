@@ -1,0 +1,75 @@
+package sessions
+
+import (
+	"crypto/rand"
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"net/http"
+)
+
+const tokenCookieName = "session_token"
+
+type SQLStore struct {
+	db *sql.DB
+}
+
+func NewSQLStore(db *sql.DB) *SQLStore {
+	return &SQLStore{db: db}
+}
+
+func (s *SQLStore) Load(r *http.Request) (Session, error) {
+	cookie, err := r.Cookie(tokenCookieName)
+	if err != nil {
+		return Session{}, nil
+	}
+	var raw []byte
+	err = s.db.QueryRowContext(r.Context(), `SELECT data FROM sessions WHERE token = $1`, cookie.Value).Scan(&raw)
+	if errors.Is(err, sql.ErrNoRows) {
+		return Session{}, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var session Session
+	return session, json.Unmarshal(raw, &session)
+}
+
+func (s *SQLStore) Save(w http.ResponseWriter, r *http.Request, session Session) error {
+	raw, err := json.Marshal(session)
+	if err != nil {
+		return err
+	}
+	token := tokenFrom(r)
+	_, err = s.db.ExecContext(r.Context(),
+		`INSERT INTO sessions (token, data) VALUES ($1, $2) ON CONFLICT (token) DO UPDATE SET data = excluded.data`,
+		token, raw)
+	if err != nil {
+		return err
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     tokenCookieName,
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	})
+	return nil
+}
+
+func (s *SQLStore) Destroy(w http.ResponseWriter, r *http.Request) error {
+	cookie, err := r.Cookie(tokenCookieName)
+	if err != nil {
+		return nil
+	}
+	http.SetCookie(w, &http.Cookie{Name: tokenCookieName, Path: "/", MaxAge: -1})
+	_, err = s.db.ExecContext(r.Context(), `DELETE FROM sessions WHERE token = $1`, cookie.Value)
+	return err
+}
+
+func tokenFrom(r *http.Request) string {
+	if cookie, err := r.Cookie(tokenCookieName); err == nil {
+		return cookie.Value
+	}
+	return rand.Text()
+}
