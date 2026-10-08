@@ -1,0 +1,38 @@
+{{define "go.mod.require"}}
+	github.com/redis/go-redis/v9 v9.23.0
+{{end}}
+
+{{define "main.imports"}}"{{.Module}}/internal/cache"{{end}}
+
+{{define "main.setup"}}
+	cacheClient, err := cache.Open(ctx, os.Getenv("REDIS_URL"))
+	if err != nil {
+		return err
+	}
+	defer cacheClient.Close()
+{{end}}
+
+{{define "main.dependencies"}}Cache: cacheClient,{{end}}
+
+{{define "handler.imports"}}redis "github.com/redis/go-redis/v9"{{end}}
+
+{{define "handler.dependencies"}}Cache *redis.Client{{end}}
+
+{{define "health.checks"}}
+		if err := deps.Cache.Ping(r.Context()).Err(); err != nil {
+			deps.Logger.Error("health check", "error", err)
+			http.Error(w, "cache unavailable", http.StatusServiceUnavailable)
+			return
+		}
+{{end}}
+
+{{define "env"}}REDIS_URL=redis://localhost:6379/0{{end}}
+
+{{define "compose.service-names"}}redis{{end}}
+
+{{define "compose.services"}}
+  redis:
+    image: redis:8
+    ports:
+      - "6379:6379"
+{{end}}
