@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 
 	"example.com/myapp/internal/bootstrap"
 	"example.com/myapp/internal/config"
@@ -24,7 +25,7 @@ func run(ctx context.Context, env environment) int {
 
 	logger := newLogger(env, cfg)
 
-	handler, err := bootstrap.NewHandler(logger)
+	handler, err := bootstrap.NewHandler(logger, os.DirFS(cfg.StaticDir))
 	if err != nil {
 		logger.Error("building handler", "error", err)
 		return exitFailure

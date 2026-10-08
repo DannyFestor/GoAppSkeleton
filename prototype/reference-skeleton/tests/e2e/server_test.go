@@ -12,13 +12,17 @@ import (
 	"time"
 )
 
-const startupTimeout = 10 * time.Second
+const (
+	startupTimeout = 10 * time.Second
+	staticDir      = "../../public"
+)
 
 func TestServerServesAndShutsDownOnSIGTERM(t *testing.T) {
 	addr := freeAddr(t)
 	server := startServer(t, buildBinary(t), addr)
 
 	waitUntilHealthy(t, addr)
+	expectStatus(t, "http://"+addr+"/static/css/main.css", http.StatusOK)
 
 	if err := server.Process.Signal(syscall.SIGTERM); err != nil {
 		t.Fatal(err)
@@ -55,8 +59,13 @@ func freeAddr(t *testing.T) string {
 func startServer(t *testing.T, binary, addr string) *exec.Cmd {
 	t.Helper()
 
+	absStaticDir, err := filepath.Abs(staticDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	server := exec.Command(binary)
-	server.Env = []string{"ADDR=" + addr}
+	server.Env = []string{"ADDR=" + addr, "STATIC_DIR=" + absStaticDir}
 	if err := server.Start(); err != nil {
 		t.Fatal(err)
 	}
@@ -81,4 +90,18 @@ func waitUntilHealthy(t *testing.T, addr string) {
 	}
 
 	t.Fatalf("server at %s not healthy within %s", addr, startupTimeout)
+}
+
+func expectStatus(t *testing.T, url string, want int) {
+	t.Helper()
+
+	resp, err := http.Get(url)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+
+	if resp.StatusCode != want {
+		t.Errorf("GET %s = %d, want %d", url, resp.StatusCode, want)
+	}
 }

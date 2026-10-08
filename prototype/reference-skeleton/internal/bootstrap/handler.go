@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"io/fs"
 	"log/slog"
 	"net/http"
 
@@ -11,7 +12,7 @@ import (
 )
 
 // NewHandler is the composition root: every feature slice is constructed and mounted here, and nowhere else.
-func NewHandler(logger *slog.Logger) (http.Handler, error) {
+func NewHandler(logger *slog.Logger, static fs.FS) (http.Handler, error) {
 	renderer, err := httpx.NewRenderer(ui.Templates)
 	if err != nil {
 		return nil, err
@@ -20,7 +21,7 @@ func NewHandler(logger *slog.Logger) (http.Handler, error) {
 	responder := httpx.NewResponder(renderer, logger)
 	mux := http.NewServeMux()
 
-	mux.Handle("GET /static/", http.FileServerFS(ui.Static))
+	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServerFS(static)))
 	health.New().Register(mux)
 	home.New(responder).Register(mux)
 

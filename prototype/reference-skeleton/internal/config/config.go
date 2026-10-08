@@ -7,13 +7,15 @@ import (
 )
 
 const (
-	defaultAddr     = ":4000"
-	defaultLogLevel = slog.LevelInfo
+	defaultAddr      = ":4000"
+	defaultLogLevel  = slog.LevelInfo
+	defaultStaticDir = "public"
 )
 
 type Config struct {
-	Addr     string
-	LogLevel slog.Level
+	Addr      string
+	LogLevel  slog.Level
+	StaticDir string
 }
 
 // Load reads every setting from environment variables, collecting all problems rather than stopping at the first.
@@ -21,8 +23,9 @@ func Load(getenv func(string) string) (Config, error) {
 	logLevel, logLevelErr := parseLogLevel(getenv("LOG_LEVEL"))
 
 	cfg := Config{
-		Addr:     withDefault(getenv("ADDR"), defaultAddr),
-		LogLevel: logLevel,
+		Addr:      withDefault(getenv("ADDR"), defaultAddr),
+		LogLevel:  logLevel,
+		StaticDir: withDefault(getenv("STATIC_DIR"), defaultStaticDir),
 	}
 
 	if err := errors.Join(logLevelErr); err != nil {

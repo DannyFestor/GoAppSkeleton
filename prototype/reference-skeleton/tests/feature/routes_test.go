@@ -8,12 +8,14 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"testing/fstest"
 
 	"example.com/myapp/internal/bootstrap"
 )
 
 func TestRoutes(t *testing.T) {
-	handler, err := bootstrap.NewHandler(slog.New(slog.NewTextHandler(io.Discard, nil)))
+	static := fstest.MapFS{"css/main.css": {Data: []byte("body {}")}}
+	handler, err := bootstrap.NewHandler(slog.New(slog.NewTextHandler(io.Discard, nil)), static)
 	if err != nil {
 		t.Fatal(err)
 	}

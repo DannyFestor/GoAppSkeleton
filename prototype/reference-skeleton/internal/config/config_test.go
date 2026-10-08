@@ -17,12 +17,12 @@ func TestLoad(t *testing.T) {
 		{
 			name: "defaults",
 			env:  map[string]string{},
-			want: config.Config{Addr: ":4000", LogLevel: slog.LevelInfo},
+			want: config.Config{Addr: ":4000", LogLevel: slog.LevelInfo, StaticDir: "public"},
 		},
 		{
 			name: "overrides",
-			env:  map[string]string{"ADDR": ":8080", "LOG_LEVEL": "debug"},
-			want: config.Config{Addr: ":8080", LogLevel: slog.LevelDebug},
+			env:  map[string]string{"ADDR": ":8080", "LOG_LEVEL": "debug", "STATIC_DIR": "/srv/public"},
+			want: config.Config{Addr: ":8080", LogLevel: slog.LevelDebug, StaticDir: "/srv/public"},
 		},
 		{
 			name:    "invalid log level",

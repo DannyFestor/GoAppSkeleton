@@ -1,4 +1,4 @@
-// Package ui embeds the HTML templates and static assets, so the built binary is the whole deployment.
+// Package ui embeds the HTML templates, so a broken or missing view is caught at build and boot rather than per deployment.
 package ui
 
 import (
@@ -6,14 +6,10 @@ import (
 	"io/fs"
 )
 
-//go:embed templates static
+//go:embed templates
 var files embed.FS
 
-var (
-	Templates = mustSub(files, "templates")
-	// Static keeps its "static" prefix so it serves directly under the /static/ route.
-	Static fs.FS = files
-)
+var Templates = mustSub(files, "templates")
 
 func mustSub(fsys fs.FS, dir string) fs.FS {
 	sub, err := fs.Sub(fsys, dir)
