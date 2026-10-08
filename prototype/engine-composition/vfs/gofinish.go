@@ -76,14 +76,18 @@ func usedQualifiers(file *ast.File) map[string]bool {
 
 var majorVersionSuffix = regexp.MustCompile(`/v[0-9]+$`)
 
-// Without loading packages the name is a guess from the path; astutil guesses "v5" for chi/v5, so strip the major version first.
-// A Template importing a package whose name differs from its last path element must name the import explicitly.
+// Without loading packages the name is a guess from the path. This mirrors goimports' importPathToAssumedName,
+// which gives "chi" for chi/v5 and "redis" for go-redis/v9, where astutil would guess "v5" and "v9".
+// A Template importing a package the rule cannot name must name the import explicitly.
 func localName(spec *ast.ImportSpec) string {
 	if spec.Name != nil {
 		return spec.Name.Name
 	}
 	importPath := majorVersionSuffix.ReplaceAllString(mustUnquote(spec.Path.Value), "")
-	return importPath[strings.LastIndex(importPath, "/")+1:]
+	name := importPath[strings.LastIndex(importPath, "/")+1:]
+	name = strings.TrimPrefix(name, "go-")
+	name = strings.TrimSuffix(strings.TrimSuffix(name, "-go"), ".go")
+	return name
 }
 
 func specName(spec *ast.ImportSpec) string {

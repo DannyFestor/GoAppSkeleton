@@ -14,7 +14,7 @@
 
 {{define "main.dependencies"}}Cache: cacheClient,{{end}}
 
-{{define "handler.imports"}}redis "github.com/redis/go-redis/v9"{{end}}
+{{define "handler.imports"}}"github.com/redis/go-redis/v9"{{end}}
 
 {{define "handler.dependencies"}}Cache *redis.Client{{end}}
 
