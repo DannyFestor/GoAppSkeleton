@@ -3,6 +3,8 @@ package styles
 
 import (
 	"example.com/enginecomp/config"
+	"example.com/enginecomp/styles/refpatch"
+	"example.com/enginecomp/styles/slots"
 	"example.com/enginecomp/styles/wholefile"
 	"example.com/enginecomp/vfs"
 )
@@ -14,4 +16,6 @@ const Control = "wholefile"
 
 var All = map[string]Renderer{
 	"wholefile": wholefile.Render,
+	"slots":     slots.Render,
+	"refpatch":  refpatch.Render,
 }
