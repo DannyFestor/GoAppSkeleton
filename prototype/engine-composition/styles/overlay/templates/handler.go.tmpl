@@ -1,0 +1,45 @@
+package bootstrap
+
+import (
+	"fmt"
+	"log/slog"
+	"net/http"
+{{block "router-imports" .}}{{end}}
+{{block "database-imports" .}}{{end}}
+{{block "sessions-imports" .}}{{end}}
+)
+
+type Dependencies struct {
+	Logger *slog.Logger
+{{- block "database-dependencies" .}}{{end}}
+{{- block "sessions-dependencies" .}}{{end}}
+}
+
+// NewHandler is the composition root: every route and middleware is wired here, and nowhere else.
+func NewHandler(deps Dependencies) http.Handler {
+	router := {{block "router-new" .}}http.NewServeMux(){{end}}
+{{- block "sessions-setup" .}}{{end}}
+
+	{{template "route" args "Method" "GET" "Path" "/healthz" "Handler" "health(deps)"}}
+{{- block "sessions-routes" .}}
+	{{template "route" args "Method" "GET" "Path" "/" "Handler" "home()"}}{{end}}
+
+	return {{block "sessions-middleware" .}}router{{end}}
+}
+
+func health(deps Dependencies) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+{{- block "database-health" .}}{{end}}
+		fmt.Fprintln(w, "ok")
+	}
+}
+
+{{block "sessions-funcs" .}}
+func home() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "Hello")
+	}
+}
+{{end}}
+
+{{- define "route"}}router.HandleFunc("{{.Method}} {{if eq .Path "/"}}/{$}{{else}}{{.Path}}{{end}}", {{.Handler}}){{end}}

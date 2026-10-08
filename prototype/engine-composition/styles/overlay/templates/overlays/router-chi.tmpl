@@ -1,0 +1,3 @@
+{{define "router-imports"}}"github.com/go-chi/chi/v5"{{end}}
+{{define "router-new"}}chi.NewRouter(){{end}}
+{{define "route"}}router.{{if eq .Method "GET"}}Get{{else}}Post{{end}}("{{.Path}}", {{.Handler}}){{end}}
