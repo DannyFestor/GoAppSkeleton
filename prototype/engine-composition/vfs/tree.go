@@ -19,18 +19,28 @@ func (t Tree) Paths() []string {
 
 // Finish is the one post-render pass shared by all styles, so differences between styles come from the Templates alone.
 func (t Tree) Finish() error {
+	module := t.module()
 	for _, path := range t.Paths() {
 		if !strings.HasSuffix(path, ".go") {
 			t[path] = withSingleTrailingNewline(t[path])
 			continue
 		}
-		finished, err := FinishGo(t[path])
+		finished, err := FinishGo(t[path], module)
 		if err != nil {
 			return fmt.Errorf("%s: %w\n%s", path, err, t[path])
 		}
 		t[path] = finished
 	}
 	return nil
+}
+
+func (t Tree) module() string {
+	for _, line := range strings.Split(string(t["go.mod"]), "\n") {
+		if module, ok := strings.CutPrefix(line, "module "); ok {
+			return strings.TrimSpace(module)
+		}
+	}
+	return ""
 }
 
 func withSingleTrailingNewline(content []byte) []byte {

@@ -1,0 +1,3 @@
+{{define "router.new"}}http.NewServeMux(){{end}}
+
+{{define "router.route"}}router.HandleFunc("{{.Method}} {{if eq .Path "/"}}/{$}{{else}}{{.Path}}{{end}}", {{.Handler}}){{end}}

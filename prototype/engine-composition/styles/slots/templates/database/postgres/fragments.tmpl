@@ -1,0 +1,27 @@
+{{define "go.mod.require"}}
+	github.com/jackc/pgx/v5 v5.11.0
+{{end}}
+
+{{define "database.driver-import"}}_ "github.com/jackc/pgx/v5/stdlib"{{end}}
+
+{{define "database.driver-name"}}pgx{{end}}
+
+{{define "database.placeholder"}}${{.}}{{end}}
+
+{{define "database.blob-type"}}BYTEA{{end}}
+
+{{define "database.migrate-command"}}for f in migrations/*.sql; do psql "$$DATABASE_URL" -f "$$f"; done{{end}}
+
+{{define "env"}}DATABASE_URL=postgres://postgres:postgres@localhost:5432/app?sslmode=disable{{end}}
+
+{{define "compose.service-names"}}postgres{{end}}
+
+{{define "compose.services"}}
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: app
+    ports:
+      - "5432:5432"
+{{end}}

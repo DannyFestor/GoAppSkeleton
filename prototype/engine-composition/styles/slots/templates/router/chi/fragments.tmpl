@@ -1,0 +1,9 @@
+{{define "go.mod.require"}}
+	github.com/go-chi/chi/v5 v5.3.2
+{{end}}
+
+{{define "handler.imports"}}"github.com/go-chi/chi/v5"{{end}}
+
+{{define "router.new"}}chi.NewRouter(){{end}}
+
+{{define "router.route"}}router.{{pascal .Method}}("{{.Path}}", {{.Handler}}){{end}}

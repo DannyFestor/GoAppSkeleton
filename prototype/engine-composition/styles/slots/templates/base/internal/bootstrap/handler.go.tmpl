@@ -1,0 +1,37 @@
+package bootstrap
+
+import (
+	"fmt"
+	"log/slog"
+	"net/http"
+{{lines "handler.imports"}}
+)
+
+type Dependencies struct {
+	Logger *slog.Logger
+{{lines "handler.dependencies"}}
+}
+
+// NewHandler is the composition root: every route and middleware is wired here, and nowhere else.
+func NewHandler(deps Dependencies) http.Handler {
+	router := {{use "router.new"}}
+{{- with lines "handler.setup"}}
+{{.}}
+{{- end}}
+
+	{{route "GET" "/healthz" "health(deps)"}}
+{{lines "handler.routes"}}
+
+	return {{wrap "handler.middleware" "router"}}
+}
+
+func health(deps Dependencies) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+{{- with lines "health.checks"}}
+{{.}}
+{{- end}}
+		fmt.Fprintln(w, "ok")
+	}
+}
+
+{{blocks "handler.funcs"}}

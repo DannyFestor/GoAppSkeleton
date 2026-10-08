@@ -1,0 +1,29 @@
+{{define "main.imports"}}"{{.Module}}/internal/database"{{end}}
+
+{{define "main.setup"}}
+	db, err := database.Open(ctx, os.Getenv("DATABASE_URL"))
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+{{end}}
+
+{{define "main.dependencies"}}DB: db,{{end}}
+
+{{define "handler.imports"}}"database/sql"{{end}}
+
+{{define "handler.dependencies"}}DB *sql.DB{{end}}
+
+{{define "health.checks"}}
+		if err := deps.DB.PingContext(r.Context()); err != nil {
+			deps.Logger.Error("health check", "error", err)
+			http.Error(w, "database unavailable", http.StatusServiceUnavailable)
+			return
+		}
+{{end}}
+
+{{define "makefile.targets"}}
+.PHONY: migrate
+migrate: ## Apply every migration in name order
+	{{use "database.migrate-command"}}
+{{end}}

@@ -1,0 +1,9 @@
+module {{.Module}}
+
+go 1.27
+{{- with lines "go.mod.require"}}
+
+require (
+{{.}}
+)
+{{- end}}

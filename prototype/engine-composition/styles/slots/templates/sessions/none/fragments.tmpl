@@ -1,0 +1,9 @@
+{{define "handler.routes"}}{{route "GET" "/" "home()"}}{{end}}
+
+{{define "handler.funcs"}}
+func home() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "Hello")
+	}
+}
+{{end}}

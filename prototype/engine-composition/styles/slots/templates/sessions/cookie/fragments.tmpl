@@ -1,0 +1,7 @@
+{{define "sessions.store"}}sessions.NewCookieStore(deps.SessionKey){{end}}
+
+{{define "main.dependencies"}}SessionKey: []byte(os.Getenv("SESSION_KEY")),{{end}}
+
+{{define "handler.dependencies"}}SessionKey []byte{{end}}
+
+{{define "env"}}SESSION_KEY=replace-with-32-random-bytes{{end}}

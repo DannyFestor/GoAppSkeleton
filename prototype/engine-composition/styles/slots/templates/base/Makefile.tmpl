@@ -1,0 +1,20 @@
+-include .env
+export
+
+.PHONY: run
+run: ## Run the web server
+	go run ./cmd/web
+
+.PHONY: test
+test: ## Run the tests
+	go test ./...
+{{- with blocks "makefile.targets"}}
+
+{{.}}
+{{- end}}
+{{- with words "compose.service-names"}}
+
+.PHONY: services
+services: ## Start the backing services
+	docker compose up -d --wait {{.}}
+{{- end}}

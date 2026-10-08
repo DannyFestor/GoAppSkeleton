@@ -13,8 +13,13 @@ import (
 	"golang.org/x/tools/go/ast/astutil"
 )
 
-// FinishGo removes unused and duplicate imports, then gofmts, all in-process: imports.Process would shell out to `go env`.
-func FinishGo(src []byte) ([]byte, error) {
+// FinishGo removes unused and duplicate imports, groups and sorts them, then gofmts, all in-process:
+// imports.Process would shell out to `go env`.
+func FinishGo(src []byte, module string) ([]byte, error) {
+	src, err := regroupImports(src, module)
+	if err != nil {
+		return nil, err
+	}
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, "", src, parser.ParseComments)
 	if err != nil {

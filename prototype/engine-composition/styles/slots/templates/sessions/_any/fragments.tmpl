@@ -1,0 +1,39 @@
+{{define "handler.imports"}}
+"strconv"
+"{{.Module}}/internal/sessions"
+{{end}}
+
+{{define "handler.setup"}}manager := sessions.NewManager({{use "sessions.store"}}){{end}}
+
+{{define "handler.routes"}}
+{{route "GET" "/" "home(deps, manager)"}}
+{{route "POST" "/logout" "logout(deps, manager)"}}
+{{end}}
+
+{{define "handler.middleware"}}manager.Middleware({{.}}){{end}}
+
+{{define "handler.funcs"}}
+func home(deps Dependencies, manager *sessions.Manager) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		session := sessions.FromContext(r.Context())
+		visits, _ := strconv.Atoi(session["visits"])
+		session["visits"] = strconv.Itoa(visits + 1)
+
+		if err := manager.Save(w, r, session); err != nil {
+			deps.Logger.Error("saving session", "error", err)
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+		fmt.Fprintf(w, "Hello, visit %d\n", visits+1)
+	}
+}
+
+func logout(deps Dependencies, manager *sessions.Manager) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := manager.Destroy(w, r); err != nil {
+			deps.Logger.Error("destroying session", "error", err)
+		}
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
+}
+{{end}}

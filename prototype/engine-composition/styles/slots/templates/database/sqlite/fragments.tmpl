@@ -1,0 +1,15 @@
+{{define "go.mod.require"}}
+	modernc.org/sqlite v1.60.1
+{{end}}
+
+{{define "database.driver-import"}}_ "modernc.org/sqlite"{{end}}
+
+{{define "database.driver-name"}}sqlite{{end}}
+
+{{define "database.placeholder"}}?{{end}}
+
+{{define "database.blob-type"}}BLOB{{end}}
+
+{{define "database.migrate-command"}}for f in migrations/*.sql; do sqlite3 "$$DATABASE_URL" < "$$f"; done{{end}}
+
+{{define "env"}}DATABASE_URL=app.db{{end}}
