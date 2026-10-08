@@ -7,12 +7,14 @@ import (
 {{block "router-imports" .}}{{end}}
 {{block "database-imports" .}}{{end}}
 {{block "sessions-imports" .}}{{end}}
+{{block "cache-imports" .}}{{end}}
 )
 
 type Dependencies struct {
 	Logger *slog.Logger
 {{- block "database-dependencies" .}}{{end}}
 {{- block "sessions-dependencies" .}}{{end}}
+{{- block "cache-dependencies" .}}{{end}}
 }
 
 // NewHandler is the composition root: every route and middleware is wired here, and nowhere else.
@@ -30,6 +32,7 @@ func NewHandler(deps Dependencies) http.Handler {
 func health(deps Dependencies) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 {{- block "database-health" .}}{{end}}
+{{- block "cache-health" .}}{{end}}
 		fmt.Fprintln(w, "ok")
 	}
 }
