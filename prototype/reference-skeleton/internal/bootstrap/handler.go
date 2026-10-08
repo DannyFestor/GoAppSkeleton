@@ -1,4 +1,4 @@
-package main
+package bootstrap
 
 import (
 	"log/slog"
@@ -10,8 +10,8 @@ import (
 	"example.com/myapp/ui"
 )
 
-// newHandler is the composition root: every feature slice is constructed and mounted here, and nowhere else.
-func newHandler(logger *slog.Logger) (http.Handler, error) {
+// NewHandler is the composition root: every feature slice is constructed and mounted here, and nowhere else.
+func NewHandler(logger *slog.Logger) (http.Handler, error) {
 	renderer, err := httpx.NewRenderer(ui.Templates)
 	if err != nil {
 		return nil, err

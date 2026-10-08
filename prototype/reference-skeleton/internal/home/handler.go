@@ -8,15 +8,20 @@ import (
 
 const page = "home.html"
 
+type responder interface {
+	Handle(fn httpx.HandlerFunc) http.Handler
+	Render(w http.ResponseWriter, status int, page string, data any) error
+}
+
 type pageData struct {
 	Title string
 }
 
 type Handler struct {
-	responder *httpx.Responder
+	responder responder
 }
 
-func New(responder *httpx.Responder) *Handler {
+func New(responder responder) *Handler {
 	return &Handler{responder: responder}
 }
 

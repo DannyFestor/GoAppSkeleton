@@ -1,4 +1,6 @@
-package main
+//go:build feature
+
+package feature_test
 
 import (
 	"io"
@@ -6,10 +8,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"example.com/myapp/internal/bootstrap"
 )
 
 func TestRoutes(t *testing.T) {
-	handler, err := newHandler(slog.New(slog.NewTextHandler(io.Discard, nil)))
+	handler, err := bootstrap.NewHandler(slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if err != nil {
 		t.Fatal(err)
 	}

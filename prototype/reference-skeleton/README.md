@@ -4,15 +4,16 @@ Throwaway. Answers [Reference Skeleton: hand-write the zero-Option web app](http
 
 ```sh
 make run      # http://localhost:4000
-make test
+make test     # unit, feature, e2e
 ```
 
 ## Decisions to react to
 
 | Concern | Prototype choice |
 |---|---|
-| Layout | `cmd/web` (process entry and composition root), `internal/<slice>` per feature, `internal/httpx` for feature-agnostic HTTP plumbing, `internal/config`, `ui/` for embedded templates and static files. |
-| Wiring | `main` builds the process environment; `run(ctx, env) int` is testable; `newHandler` in `cmd/web/handler.go` is the only place slices are constructed and mounted. No globals, no DI container, no interfaces until a second implementation exists. |
+| Layout | `cmd/web` (process entry only), `internal/bootstrap` (composition root, importable by feature tests), `internal/<slice>` per feature, `internal/httpx` for feature-agnostic HTTP plumbing, `internal/config`, `ui/` for embedded templates and static files. |
+| Wiring | Dependency injection everywhere through exported constructors. `main` builds the process environment; `run(ctx, env) int` is testable; `bootstrap.NewHandler` is the only place slices are constructed and mounted. No globals, no DI container. |
+| Interfaces | Declared by the consumer, next to the code that uses them (`home.responder`, `httpx.pageRenderer`, `httpx.errorResponder`), never by the provider. Duplicating a small interface across consumers is fine; a provider-owned interface invites import cycles. |
 | Slice shape | `type Handler struct{deps}`, `New(deps) *Handler`, `Register(mux)`. The slice owns its route patterns. |
 | Handler shape | `func(w, r) error`, adapted by `Responder.Handle`. `httpx.StatusError` is shown to the client; any other error is logged and becomes a generic 500. |
 | Rendering | `html/template`, every page parsed at boot (broken template fails startup), rendered into a buffer before writing. |
@@ -20,5 +21,5 @@ make test
 | Logging | `log/slog` text handler on stdout, level from config, injected (no `slog.SetDefault`). `http.Server.ErrorLog` routed through it. |
 | Server | Timeouts set, graceful shutdown on SIGINT/SIGTERM with a 10s drain. Panic recovery middleware. No request logging (that is an Option). |
 | 404/405 | Left to `http.ServeMux` (plain text). A catch-all `/` route for a custom 404 page breaks ServeMux's 405 handling, so custom error pages stay an Option. |
-| Tests | stdlib `testing` + `httptest`, table-driven. Unit tests per package; one route-table test through the composed handler; `run` tested for bad config and clean shutdown. No services needed. |
+| Tests | stdlib `testing` + `httptest`, table-driven. Three tiers: unit tests beside their implementation, using fakes of the consumer-side interfaces; `tests/feature/` (build tag `feature`) drives `bootstrap.NewHandler` in process; `tests/e2e/` (build tag `e2e`) builds the binary, waits for `/healthz`, sends SIGTERM and expects a clean exit. No services needed. |
 | Dependencies | None. |

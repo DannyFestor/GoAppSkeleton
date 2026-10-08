@@ -13,8 +13,19 @@ build: ## Build the binary into bin/
 	go build -o bin/web ./cmd/web
 
 .PHONY: test
-test: ## Run the tests with the race detector
+test: test-unit test-feature test-e2e ## Run the unit, feature, and e2e tiers
+
+.PHONY: test-unit
+test-unit: ## Run the unit tests
 	go test -race ./...
+
+.PHONY: test-feature
+test-feature: ## Run the feature tests
+	go test -race -tags feature ./tests/feature/...
+
+.PHONY: test-e2e
+test-e2e: ## Run the e2e tests against the built binary
+	go test -race -tags e2e ./tests/e2e/...
 
 .PHONY: audit
 audit: ## Check formatting, vet, and module tidiness

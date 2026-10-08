@@ -5,8 +5,12 @@ import (
 	"net/http"
 )
 
+type errorResponder interface {
+	Error(w http.ResponseWriter, r *http.Request, err error)
+}
+
 // Recover turns a panicking handler into a logged 500 instead of a dropped connection.
-func Recover(responder *Responder, next http.Handler) http.Handler {
+func Recover(responder errorResponder, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			recovered := recover()

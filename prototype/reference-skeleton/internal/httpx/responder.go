@@ -11,6 +11,10 @@ const errorPage = "error.html"
 // HandlerFunc is the handler shape every feature slice uses: return an error instead of writing one.
 type HandlerFunc func(http.ResponseWriter, *http.Request) error
 
+type pageRenderer interface {
+	Render(w http.ResponseWriter, status int, page string, data any) error
+}
+
 type errorPageData struct {
 	Status  int
 	Message string
@@ -18,11 +22,11 @@ type errorPageData struct {
 
 // Responder is the single place handler errors become responses, so slices never format error pages themselves.
 type Responder struct {
-	renderer *Renderer
+	renderer pageRenderer
 	logger   *slog.Logger
 }
 
-func NewResponder(renderer *Renderer, logger *slog.Logger) *Responder {
+func NewResponder(renderer pageRenderer, logger *slog.Logger) *Responder {
 	return &Responder{renderer: renderer, logger: logger}
 }
 
