@@ -19,7 +19,8 @@ const referenceModule = "example.com/myapp"
 
 // guess names a package after its last path element, which is "v5" for chi; every such package needs an entry.
 var packageNames = guess.WithMap(map[string]string{
-	"github.com/go-chi/chi/v5": "chi",
+	"github.com/go-chi/chi/v5":     "chi",
+	"github.com/redis/go-redis/v9": "redis",
 })
 
 type goFiles map[string]*dst.File

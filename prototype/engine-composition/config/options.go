@@ -36,6 +36,7 @@ var Catalogue = []Option{
 	{Name: "router", Choices: []string{"stdlib", "chi"}, Default: "stdlib"},
 	{Name: "database", Choices: []string{None, "postgres", "sqlite"}, Default: None},
 	{Name: "sessions", Choices: []string{None, "cookie", "database"}, Default: None},
+	{Name: "cache", Choices: []string{None, "redis"}, Default: None},
 }
 
 var Relations = []Relation{

@@ -1,5 +1,6 @@
-{{- if .Is "database" "postgres" -}}
+{{- if or (.Is "database" "postgres") (.Is "cache" "redis") -}}
 services:
+{{- if .Is "database" "postgres"}}
   postgres:
     image: postgres:18
     environment:
@@ -7,4 +8,13 @@ services:
       POSTGRES_DB: app
     ports:
       - "5432:5432"
+{{- end}}
+{{- if and (.Is "database" "postgres") (.Is "cache" "redis")}}
+{{end}}
+{{- if .Is "cache" "redis"}}
+  redis:
+    image: redis:8
+    ports:
+      - "6379:6379"
+{{- end}}
 {{- end}}

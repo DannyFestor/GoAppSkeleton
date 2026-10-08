@@ -17,6 +17,7 @@ var patches = []patch{
 	{when: []config.Selection{{Option: "sessions", Choice: "cookie"}}, apply: addCookieSessions},
 	{when: []config.Selection{{Option: "sessions", Choice: "database"}}, apply: addSQLSessions},
 	{when: []config.Selection{{Option: "sessions", Choice: "database"}, {Option: "database", Choice: "sqlite"}}, apply: useSQLitePlaceholders},
+	{when: []config.Selection{{Option: "cache", Choice: "redis"}}, apply: addCache},
 	{when: []config.Selection{{Option: "router", Choice: "chi"}}, apply: useChiRouter},
 }
 

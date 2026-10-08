@@ -1,7 +1,7 @@
 module {{.Module}}
 
 go 1.27
-{{- if or (.Is "router" "chi") (.Uses "database")}}
+{{- if or (.Is "router" "chi") (.Uses "database") (.Uses "cache")}}
 
 require (
 {{- if .Is "router" "chi"}}
@@ -12,6 +12,9 @@ require (
 {{- end}}
 {{- if .Is "database" "sqlite"}}
 	modernc.org/sqlite v1.60.1
+{{- end}}
+{{- if .Is "cache" "redis"}}
+	github.com/redis/go-redis/v9 v9.23.0
 {{- end}}
 )
 {{- end}}
