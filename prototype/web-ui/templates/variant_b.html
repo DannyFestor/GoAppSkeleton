@@ -1,0 +1,89 @@
+{{/* B: one catalogue group per step, mirroring the CLI wizard: module path first, each group skippable with its defaults, a review step that holds the downloads. Unmet requires leave a Choice out and name it. */}}
+{{define "variant-B"}}
+<style>
+  .b-wrap { max-width:760px; margin:0 auto; padding:1.5rem 1.5rem 5rem; }
+  .b-steps { display:flex; gap:.25rem; margin-bottom:1.5rem; }
+  .b-steps a { flex:1; text-align:center; font-size:.75rem; padding:.4rem .2rem; border-bottom:3px solid var(--line); color:var(--muted); text-decoration:none; }
+  .b-steps a.done { border-color:#9db3ec; }
+  .b-steps a.current { border-color:var(--accent); color:var(--fg); font-weight:600; }
+  .b-card { background:#fff; border:1px solid var(--line); border-radius:10px; padding:1.5rem; }
+  .b-card h2 { margin:0 0 .3rem; font-size:1.3rem; }
+  .b-option { margin-top:1.4rem; }
+  .b-option h3 { margin:0; font-size:1rem; }
+  .b-tiles { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); gap:.5rem; margin-top:.5rem; }
+  .b-tiles label { display:block; border:1px solid var(--line); border-radius:8px; padding:.6rem .7rem; cursor:pointer; }
+  .b-tiles label:has(input:checked) { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+  .b-tiles input { margin-right:.3rem; }
+  .b-nav { display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem; }
+  .b-skip { background:#f3f5fb; border-radius:8px; padding:.7rem .9rem; margin-top:1rem; }
+  table.b-review { width:100%; border-collapse:collapse; margin:1rem 0; }
+  table.b-review td { padding:.3rem .4rem; border-top:1px solid var(--line); vertical-align:top; }
+</style>
+<div class="b-wrap">
+  <nav class="b-steps">
+    <a href="{{.URL "B" 0}}" class="{{if eq .Step 0}}current{{else}}done{{end}}">Module</a>
+    {{range $i, $group := .Groups}}{{$n := add $i 1}}
+    <a href="{{$.URL "B" $n}}" class="{{if eq $.Step $n}}current{{else if lt $n $.Step}}done{{end}}">{{$group.Label}}</a>
+    {{end}}
+    <a href="{{.URL "B" .ReviewStep}}" class="{{if eq .Step .ReviewStep}}current{{end}}">Review</a>
+  </nav>
+
+  <div class="b-card">
+  {{if eq .Step 0}}
+    <h2>Where will this module live?</h2>
+    <p class="muted">The module path goes into go.mod. The folder and the zip are named after its last element.</p>
+    {{template "module-input" .}}
+    <p>Folder: <b>{{.ProjectName}}/</b></p>
+  {{else if eq .Step .ReviewStep}}
+    <h2>Review</h2>
+    <p class="muted">{{.State.Module}} → {{.ProjectName}}.zip</p>
+    {{template "errors" .}}
+    <table class="b-review">
+      {{range $group := .Groups}}{{range $option := $group.Options}}{{if not ($.IsInapplicable $option.ID)}}
+      <tr><td>{{$option.Label}}</td><td><b>{{$.ChoiceLabels $option}}</b></td><td><span class="badge {{if eq ($.Source $option.ID) "you"}}you{{end}}">{{$.Source $option.ID}}</span></td></tr>
+      {{end}}{{end}}{{end}}
+    </table>
+    <p class="muted">Same Skeleton from the CLI:</p>
+    <pre>{{.EquivalentCommand}}</pre>
+  {{else}}{{$group := .StepGroup}}
+    <h2>{{$group.Label}}</h2>
+    <div class="b-skip">
+      <div class="muted">Keeping the defaults gives:</div>
+      <div>{{$.GroupSummary $group}}</div>
+    </div>
+    {{range $option := $group.Options}}{{if not ($.IsInapplicable $option.ID)}}
+    <div class="b-option">
+      <h3>{{$option.Label}} {{if eq ($.Source $option.ID) "you"}}<button type="button" class="linkish" data-reset="{{$option.ID}}">↺ default</button>{{end}}</h3>
+      <div class="muted">{{$option.Summary}}{{if eq $option.Kind 1}} · pick any{{end}}</div>
+      <div class="b-tiles">
+        {{range $choice := $option.Choices}}{{$reason := $.BlockedReason $option.ID $choice.ID}}{{if or (not $reason) ($.Selected $option.ID $choice.ID)}}
+        <label>
+          <input type="{{if eq $option.Kind 1}}checkbox{{else}}radio{{end}}" name="b-{{$option.ID}}" id="b-{{$option.ID}}-{{$choice.ID}}" value="{{$choice.ID}}" data-option="{{$option.ID}}" {{if eq $option.Kind 1}}data-kind="multi"{{end}} {{if $.Selected $option.ID $choice.ID}}checked{{end}}>
+          <b>{{$choice.Label}}</b>
+          <div class="muted">{{$choice.Summary}}</div>
+        </label>
+        {{end}}{{end}}
+      </div>
+      {{with $.LeftOutNotes $option}}<div class="muted">Left out: {{range $i, $n := .}}{{if $i}}; {{end}}{{$n}}{{end}}</div>{{end}}
+    </div>
+    {{end}}{{end}}
+    {{with $.HiddenNotes $group}}<p class="muted">Skipped: {{range $i, $n := .}}{{if $i}}; {{end}}{{$n}}{{end}}</p>{{end}}
+  {{end}}
+
+    <div class="b-nav">
+      {{if gt .Step 0}}<a class="button" href="{{.URL "B" (add .Step -1)}}">← Back</a>{{else}}<span></span>{{end}}
+      {{if lt .Step .ReviewStep}}
+        <span>
+          {{if gt .Step 0}}<a class="linkish" href="{{.URL "B" .ReviewStep}}">Keep the rest as defaults</a>&nbsp;&nbsp;{{end}}
+          <a class="button primary" href="{{.URL "B" (add .Step 1)}}">Next →</a>
+        </span>
+      {{else}}
+        <span>
+          <a class="button" href="{{.ConfigurationURL}}">Configuration file</a>
+          <a class="button primary" href="{{.ZipURL}}" {{if .Errors}}aria-disabled="true"{{end}}>Download {{.ProjectName}}.zip</a>
+        </span>
+      {{end}}
+    </div>
+  </div>
+</div>
+{{end}}

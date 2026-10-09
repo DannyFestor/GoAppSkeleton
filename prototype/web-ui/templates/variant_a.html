@@ -1,0 +1,65 @@
+{{/* A: everything on one scrolling page, grouped; a sticky sidebar shows the result and the downloads. Unmet requires disable a Choice and say why. */}}
+{{define "variant-A"}}
+<style>
+  .a-wrap { display:grid; grid-template-columns:minmax(0,1fr) 380px; gap:2rem; max-width:1200px; margin:0 auto; padding:1.5rem 1.5rem 5rem; }
+  .a-module { background:#fff; border:1px solid var(--line); border-radius:8px; padding:1rem; margin-bottom:1.5rem; }
+  .a-module label { font-weight:600; display:block; margin-bottom:.4rem; }
+  .a-group h2 { font-size:1rem; margin:1.6rem 0 .5rem; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
+  .a-option { display:grid; grid-template-columns:200px 1fr; gap:1rem; padding:.8rem 0; border-top:1px solid var(--line); }
+  .a-option .name { font-weight:600; }
+  .a-choices { display:flex; flex-wrap:wrap; gap:.4rem .9rem; }
+  .a-choices label { display:flex; gap:.35rem; align-items:center; }
+  .a-choices label.blocked { color:var(--muted); }
+  .a-side { position:sticky; top:1rem; align-self:start; display:flex; flex-direction:column; gap:1rem; }
+  .a-side .actions { display:flex; gap:.5rem; flex-wrap:wrap; }
+</style>
+<div class="a-wrap">
+  <main>
+    <section class="a-module">
+      <label for="module">Module path</label>
+      {{template "module-input" .}}
+      <div class="muted">Project folder and zip are named after the last element: <b>{{.ProjectName}}</b></div>
+    </section>
+    {{range $group := .Groups}}
+    <section class="a-group">
+      <h2>{{$group.Label}}</h2>
+      {{range $option := $group.Options}}{{if not ($.IsInapplicable $option.ID)}}
+      <div class="a-option">
+        <div>
+          <div class="name">{{$option.Label}}</div>
+          <div class="muted">{{$option.Summary}}</div>
+          {{if eq ($.Source $option.ID) "you"}}<button type="button" class="linkish" data-reset="{{$option.ID}}">↺ back to default ({{$.DefaultLabel $option}})</button>{{else}}<span class="badge">default</span>{{end}}
+        </div>
+        <div class="a-choices">
+          {{if eq $option.Kind 2}}
+            <label><input type="checkbox" data-option="{{$option.ID}}" id="a-{{$option.ID}}" {{if $.Selected $option.ID "on"}}checked{{end}}> {{(index $option.Choices 1).Summary}}</label>
+          {{else}}{{range $choice := $option.Choices}}{{$reason := $.BlockedReason $option.ID $choice.ID}}
+            <label class="{{if $reason}}blocked{{end}}" title="{{$choice.Summary}}">
+              <input type="{{if eq $option.Kind 1}}checkbox{{else}}radio{{end}}" name="a-{{$option.ID}}" form="none" id="a-{{$option.ID}}-{{$choice.ID}}" value="{{$choice.ID}}" data-option="{{$option.ID}}" {{if eq $option.Kind 1}}data-kind="multi"{{end}} {{if $.Selected $option.ID $choice.ID}}checked{{end}} {{if and $reason (not ($.Selected $option.ID $choice.ID))}}disabled{{end}}>
+              {{$choice.Label}}{{if $reason}} <span class="muted">({{$reason}})</span>{{end}}
+            </label>
+          {{end}}{{end}}
+        </div>
+      </div>
+      {{end}}{{end}}
+      {{with $.HiddenNotes $group}}<div class="muted">Not shown: {{range $i, $n := .}}{{if $i}}; {{end}}{{$n}}{{end}}</div>{{end}}
+    </section>
+    {{end}}
+  </main>
+  <aside class="a-side">
+    {{template "errors" .}}
+    <div class="actions">
+      <a class="button primary" href="{{.ZipURL}}" {{if .Errors}}aria-disabled="true"{{end}}>Download {{.ProjectName}}.zip</a>
+      <a class="button" href="{{.ConfigurationURL}}">Download Configuration file</a>
+    </div>
+    <div>
+      <div class="muted">Same Skeleton from the CLI</div>
+      <pre>{{.EquivalentCommand}}</pre>
+    </div>
+    <div>
+      <div class="muted">{{.ConfigurationFileName}} (also inside the zip)</div>
+      <pre>{{.ConfigurationTOML}}</pre>
+    </div>
+  </aside>
+</div>
+{{end}}

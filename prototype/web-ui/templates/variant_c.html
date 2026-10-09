@@ -1,0 +1,64 @@
+{{/* C: a compact table of selects on the left, the Skeleton itself (file tree, Configuration file) as the main pane. Nothing is hidden or disabled: inapplicable Options stay greyed, and unmet requires show up as errors. */}}
+{{define "variant-C"}}
+<style>
+  .c-wrap { display:grid; grid-template-columns:420px minmax(0,1fr); height:calc(100vh - 50px); }
+  .c-left { overflow:auto; border-right:1px solid var(--line); background:#fff; padding:1rem 1rem 5rem; }
+  .c-left label.module { font-size:.8rem; color:var(--muted); }
+  table.c-table { width:100%; border-collapse:collapse; margin-top:1rem; font-size:.88rem; }
+  table.c-table th { text-align:left; font-size:.72rem; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); padding:.9rem 0 .2rem; }
+  table.c-table td { padding:.2rem .3rem; border-top:1px solid #eee; }
+  table.c-table tr.na td { color:#aaa; }
+  table.c-table select { font:inherit; width:100%; }
+  .c-multi label { margin-right:.5rem; white-space:nowrap; }
+  .c-right { display:grid; grid-template-rows:auto minmax(0,1fr); overflow:hidden; }
+  .c-bar { display:flex; gap:.6rem; align-items:center; padding:.8rem 1rem; border-bottom:1px solid var(--line); background:#fff; }
+  .c-bar .grow { flex:1; }
+  .c-panes { display:grid; grid-template-columns:1fr 1fr; gap:1rem; padding:1rem 1rem 5rem; overflow:auto; }
+  .c-tree div { white-space:pre; }
+</style>
+<div class="c-wrap">
+  <div class="c-left">
+    <label class="module" for="module">module</label>
+    {{template "module-input" .}}
+    <table class="c-table">
+      {{range $group := .Groups}}
+      <tr><th colspan="3">{{$group.Label}}</th></tr>
+      {{range $option := $group.Options}}{{$na := $.IsInapplicable $option.ID}}
+      <tr class="{{if $na}}na{{end}}" title="{{$option.Summary}}">
+        <td>{{$option.ID}}</td>
+        <td>
+          {{if $na}}<span>n/a, needs {{AppliesBecause $option}}</span>
+          {{else if eq $option.Kind 1}}<span class="c-multi">{{range $choice := $option.Choices}}<label><input type="checkbox" id="c-{{$option.ID}}-{{$choice.ID}}" value="{{$choice.ID}}" data-option="{{$option.ID}}" data-kind="multi" {{if $.Selected $option.ID $choice.ID}}checked{{end}}>{{$choice.ID}}</label>{{end}}</span>
+          {{else}}
+          <select id="c-{{$option.ID}}" data-option="{{$option.ID}}">
+            <option value="" {{if ne ($.Source $option.ID) "you"}}selected{{end}}>default ({{$.DefaultLabel $option}})</option>
+            {{range $choice := $option.Choices}}{{$reason := $.BlockedReason $option.ID $choice.ID}}
+            <option value="{{$choice.ID}}" {{if and (eq ($.Source $option.ID) "you") ($.Selected $option.ID $choice.ID)}}selected{{end}}>{{$choice.Label}}{{if $reason}} ⚠ {{$reason}}{{end}}</option>
+            {{end}}
+          </select>
+          {{end}}
+        </td>
+        <td>{{if not $na}}<span class="badge {{if eq ($.Source $option.ID) "you"}}you{{end}}">{{$.Source $option.ID}}</span>{{end}}</td>
+      </tr>
+      {{end}}{{end}}
+    </table>
+  </div>
+  <div class="c-right">
+    <div class="c-bar">
+      <div class="grow">{{if .Errors}}{{template "errors" .}}{{else}}<span class="mono">{{.EquivalentCommand}}</span>{{end}}</div>
+      <a class="button" href="{{.ConfigurationURL}}">{{.ConfigurationFileName}}</a>
+      <a class="button primary" href="{{.ZipURL}}" {{if .Errors}}aria-disabled="true"{{end}}>{{.ProjectName}}.zip</a>
+    </div>
+    <div class="c-panes">
+      <div>
+        <div class="muted">{{.ProjectName}}/ · <span class="added">green</span> = added by your Choices</div>
+        <pre class="c-tree">{{range .Tree}}<div class="{{if .Added}}added{{end}}">{{range $i := until .Depth}}  {{end}}{{.Name}}</div>{{end}}</pre>
+      </div>
+      <div>
+        <div class="muted">{{.ConfigurationFileName}}</div>
+        <pre>{{.ConfigurationTOML}}</pre>
+      </div>
+    </div>
+  </div>
+</div>
+{{end}}

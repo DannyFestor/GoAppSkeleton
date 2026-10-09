@@ -1,0 +1,107 @@
+{{define "layout"}}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>goskel · new Skeleton (PROTOTYPE {{.Variant.Key}})</title>
+<script src="https://unpkg.com/htmx.org@2.0.4"></script>
+<style>
+  :root { --fg:#1d1d1f; --muted:#6e6e73; --line:#d9d9de; --accent:#2457d6; --bad:#b3261e; --good:#1b7f3b; --bg:#fafafa; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.45 system-ui, sans-serif; color:var(--fg); background:var(--bg); }
+  header.top { display:flex; align-items:baseline; gap:1rem; padding:.8rem 1.5rem; border-bottom:1px solid var(--line); background:#fff; }
+  header.top h1 { font-size:1.05rem; margin:0; }
+  header.top .muted { margin-left:auto; }
+  .muted { color:var(--muted); font-size:.85em; }
+  .bad { color:var(--bad); }
+  .added { color:var(--good); font-weight:600; }
+  code, pre, .mono { font-family:ui-monospace, Menlo, monospace; font-size:.85rem; }
+  pre { background:#fff; border:1px solid var(--line); border-radius:6px; padding:.7rem; overflow:auto; margin:0; }
+  input[type=text] { font:inherit; padding:.45rem .6rem; border:1px solid var(--line); border-radius:6px; width:100%; }
+  .button { display:inline-block; padding:.5rem .9rem; border-radius:6px; border:1px solid var(--line); background:#fff; color:var(--fg); text-decoration:none; cursor:pointer; font:inherit; }
+  .button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .button[aria-disabled=true] { opacity:.4; pointer-events:none; }
+  .linkish { background:none; border:0; color:var(--accent); cursor:pointer; padding:0; font:inherit; font-size:.85em; }
+  .badge { font-size:.7rem; padding:.05rem .4rem; border-radius:999px; border:1px solid var(--line); color:var(--muted); white-space:nowrap; }
+  .badge.you { border-color:var(--accent); color:var(--accent); }
+  ul.errors { margin:0; padding-left:1.1rem; color:var(--bad); font-size:.9rem; }
+  #switcher { position:fixed; bottom:1rem; left:50%; transform:translateX(-50%); display:flex; gap:.6rem; align-items:center; background:#111; color:#fff; padding:.4rem .8rem; border-radius:999px; box-shadow:0 4px 18px rgba(0,0,0,.35); font-size:.85rem; z-index:10; }
+  #switcher a { color:#fff; text-decoration:none; padding:0 .4rem; font-size:1.1rem; }
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>goskel</h1><span>new Skeleton</span>
+  <form class="muted" action="/load" method="post" enctype="multipart/form-data">
+    <input type="hidden" name="variant" value="{{.Variant.Key}}">
+    <label>Load a Configuration file <input type="file" name="configuration" accept=".toml" onchange="this.form.submit()"></label>
+  </form>
+</header>
+<div id="app">
+  <form id="state" action="/" method="get" hx-get="/" hx-trigger="refresh" hx-target="#app" hx-select="#app" hx-swap="outerHTML" hx-replace-url="true">
+    <input type="hidden" name="variant" value="{{.Variant.Key}}">
+    <input type="hidden" name="step" value="{{.Step}}">
+    <input type="hidden" name="module" value="{{.State.Module}}">
+    {{range .State.HiddenFields}}<input type="hidden" name="{{.Name}}" value="{{.Value}}">{{end}}
+  </form>
+  {{if eq .Variant.Key "A"}}{{template "variant-A" .}}{{end}}
+  {{if eq .Variant.Key "B"}}{{template "variant-B" .}}{{end}}
+  {{if eq .Variant.Key "C"}}{{template "variant-C" .}}{{end}}
+  <nav id="switcher">
+    <a id="switch-prev" href="{{.URL .Previous.Key .Step}}">←</a>
+    <span>PROTOTYPE {{.Variant.Key}} ({{.Variant.Name}})</span>
+    <a id="switch-next" href="{{.URL .Next.Key .Step}}">→</a>
+  </nav>
+</div>
+<script>
+  // Visible controls carry data-option and never submit; this copies the
+  // user's touch into the hidden #state form, so untouched Options stay unset.
+  const stateForm = () => document.getElementById('state');
+  function setField(name, value) {
+    let field = stateForm().querySelector(`input[name="${CSS.escape(name)}"]`);
+    if (value === null) { if (field) field.remove(); return; }
+    if (!field) {
+      field = Object.assign(document.createElement('input'), { type: 'hidden', name });
+      stateForm().appendChild(field);
+    }
+    field.value = value;
+  }
+  function refresh() { htmx.trigger(stateForm(), 'refresh'); }
+  function valueOf(el, option) {
+    if (el.tagName === 'SELECT') return el.value === '' ? null : el.value;
+    if (el.dataset.kind === 'multi') {
+      return [...document.querySelectorAll(`[data-option="${option}"]:checked`)].map(c => c.value).join(',');
+    }
+    if (el.type === 'checkbox') return el.checked ? 'on' : 'none';
+    return el.value;
+  }
+  document.addEventListener('change', e => {
+    const option = e.target.dataset.option;
+    if (!option) return;
+    setField('x.' + option, valueOf(e.target, option));
+    refresh();
+  });
+  document.addEventListener('click', e => {
+    const option = e.target.dataset.reset;
+    if (!option) return;
+    setField('x.' + option, null);
+    refresh();
+  });
+  let moduleTimer;
+  document.addEventListener('input', e => {
+    if (e.target.id !== 'module') return;
+    clearTimeout(moduleTimer);
+    moduleTimer = setTimeout(() => { setField('module', e.target.value.trim()); refresh(); }, 300);
+  });
+  document.addEventListener('keydown', e => {
+    if (e.target.closest('input, select, textarea, [contenteditable]')) return;
+    if (e.key === 'ArrowLeft') document.getElementById('switch-prev').click();
+    if (e.key === 'ArrowRight') document.getElementById('switch-next').click();
+  });
+</script>
+</body>
+</html>{{end}}
+
+{{define "module-input"}}<input type="text" id="module" value="{{.State.Module}}" placeholder="github.com/acme/shop" autocomplete="off" spellcheck="false">{{end}}
+
+{{define "errors"}}{{if .Errors}}<ul class="errors">{{range .Errors}}<li>{{.}}</li>{{end}}</ul>{{end}}{{end}}
